@@ -19,19 +19,49 @@ class build_ext(orig_build_ext):
         rmtree(path.join(self.build_lib, "tests"), ignore_errors=True)
 
 
+with open("gpiod/version.py", "r") as fd:
+    exec(fd.read())
+
+
+sources = [
+    # gpiod Python bindings
+    "gpiod/ext/chip.c",
+    "gpiod/ext/common.c",
+    "gpiod/ext/line-config.c",
+    "gpiod/ext/line-settings.c",
+    "gpiod/ext/module.c",
+    "gpiod/ext/request.c"
+]
+
+if "USE_SYSTEM_GPIOD" in environ and environ["USE_SYSTEM_GPIOD"] == "1":
+    libraries = ["gpiod"]
+    include_dirs = ["gpiod"]
+else:
+    sources += [
+        # gpiod library
+        "lib/chip.c",
+        "lib/chip-info.c",
+        "lib/edge-event.c",
+        "lib/info-event.c",
+        "lib/internal.c",
+        "lib/line-config.c",
+        "lib/line-info.c",
+        "lib/line-request.c",
+        "lib/line-settings.c",
+        "lib/misc.c",
+        "lib/request-config.c"
+    ]
+    libraries = []
+    include_dirs = ["include", "lib", "gpiod/ext"]
+
+
 gpiod_ext = Extension(
     "gpiod._ext",
-    sources=[
-        "gpiod/ext/chip.c",
-        "gpiod/ext/common.c",
-        "gpiod/ext/line-config.c",
-        "gpiod/ext/line-settings.c",
-        "gpiod/ext/module.c",
-        "gpiod/ext/request.c",
-    ],
+    libraries=libraries,
+    sources=sources,
     define_macros=[("_GNU_SOURCE", "1")],
-    libraries=["gpiod"],
-    extra_compile_args=["-Wall", "-Wextra"],
+    include_dirs=include_dirs,
+    extra_compile_args=["-Wall", "-Wextra", "-DGPIOD_VERSION_STR=\"{}\"".format(__version__)],
 )
 
 gpiosim_ext = Extension(
@@ -53,9 +83,6 @@ extensions = [gpiod_ext]
 if "GPIOD_WITH_TESTS" in environ and environ["GPIOD_WITH_TESTS"] == "1":
     extensions.append(gpiosim_ext)
     extensions.append(procname_ext)
-
-with open("gpiod/version.py", "r") as fd:
-    exec(fd.read())
 
 setup(
     name="libgpiod",

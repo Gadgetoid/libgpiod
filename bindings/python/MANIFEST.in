@@ -11,3 +11,7 @@ recursive-include gpiod/ext *.h
 
 recursive-include tests/gpiosim *.c
 recursive-include tests/procname *.c
+
+recursive-include lib *.C
+recursive-include lib *.h
+recursive-include include *.h
