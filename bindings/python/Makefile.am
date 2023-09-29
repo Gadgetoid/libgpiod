@@ -16,6 +16,9 @@ all-local:
 	$(PYTHON) setup.py build_ext --inplace \
 		--include-dirs=$(top_srcdir)/include/:$(top_srcdir)/tests/gpiosim/ \
 		--library-dirs=$(top_builddir)/lib/.libs/:$(top_srcdir)/tests/gpiosim/.libs/
+	GPIOD_VERSION_STR=$(VERSION_STR) \
+	$(PYTHON) setup.py sdist
+
 
 install-exec-local:
 	GPIOD_WITH_TESTS= \
