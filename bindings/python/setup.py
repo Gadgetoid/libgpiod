@@ -87,6 +87,7 @@ if "GPIOD_WITH_TESTS" in environ and environ["GPIOD_WITH_TESTS"] == "1":
 setup(
     name="libgpiod",
     packages=find_packages(exclude=["tests", "tests.*"]),
+    python_requires=">=3.10.0",
     ext_modules=extensions,
     cmdclass={"build_ext": build_ext},
     version=__version__,
