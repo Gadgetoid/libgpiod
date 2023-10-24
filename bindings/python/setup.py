@@ -12,6 +12,7 @@ from setuptools.errors import BaseError
 
 LINK_SYSTEM_LIBGPIOD = getenv("LINK_SYSTEM_LIBGPIOD") == "1"
 LIBGPIOD_MINIMUM_VERSION = "2.1.0"
+SKIP_LIBGPIOD_VERSION_CHECK = getenv("SKIP_LIBGPIOD_VERSION_CHECK") == "1"
 LIBGPIOD_VERSION = getenv("LIBGPIOD_VERSION")
 GPIOD_WITH_TESTS = getenv("GPIOD_WITH_TESTS") == "1"
 SRC_BASE_URL = "https://mirrors.edge.kernel.org/pub/software/libs/libgpiod/"
@@ -107,8 +108,9 @@ def fetch_tarball(command):
 
             tarball_sha256 = find_sha256sum(asc_filename, tarball_filename)
 
-            if Version(LIBGPIOD_VERSION) < Version(LIBGPIOD_MINIMUM_VERSION):
-                raise BaseError(f"requires libgpiod>={LIBGPIOD_MINIMUM_VERSION}")
+            if not SKIP_LIBGPIOD_VERSION_CHECK:
+                if Version(LIBGPIOD_VERSION) < Version(LIBGPIOD_MINIMUM_VERSION):
+                    raise BaseError(f"requires libgpiod>={LIBGPIOD_MINIMUM_VERSION}")
 
             log.info(f"fetching: {tarball_url}")
 
@@ -186,6 +188,26 @@ class build_ext(orig_build_ext):
             gpiod_ext.extra_compile_args.append(
                 f'-DGPIOD_VERSION_STR="{libgpiod_version}"',
             )
+        
+        else:
+            log.info(f"attempting to link system libgpiod")
+            try:
+                from distutils.spawn import find_executable
+                from subprocess import check_output, CalledProcessError
+                from packaging.version import Version
+                pkgconfig = find_executable("pkg-config")
+                if pkgconfig:
+                    try:
+                        gpiodver = check_output([pkgconfig,"--modversion", "libgpiod"])
+                        gpiodver = gpiodver.decode("utf8").strip()
+                        log.info(f"pkg-config reports libgpiod {gpiodver}")
+
+                        if Version(gpiodver) < Version(LIBGPIOD_MINIMUM_VERSION):
+                            raise BaseError(f"requires libgpiod>={LIBGPIOD_MINIMUM_VERSION}")
+                    except CalledProcessError:
+                        pass
+            except ImportError:
+                pass
 
         super().run()
 
