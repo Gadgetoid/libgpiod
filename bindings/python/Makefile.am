@@ -7,15 +7,19 @@ EXTRA_DIST = \
 
 if WITH_TESTS
 
-BUILD_TESTS = 1
+python-tests:
+	GPIOD_WITH_TESTS=1 \
+	CFLAGS="-I$(abs_top_srcdir)/include/ -I$(abs_top_srcdir)/tests/gpiosim/ \
+	-L$(abs_top_builddir)/lib/.libs/ -L$(abs_top_srcdir)/tests/gpiosim/.libs/" \
+	$(PYTHON) -m pip install --prefix=/var/tmp --no-build-isolation --editable .
 
 endif
 
-all-local:
-	GPIOD_WITH_TESTS=$(BUILD_TESTS) \
-	$(PYTHON) setup.py build_ext --inplace \
-		--include-dirs=$(top_srcdir)/include/:$(top_srcdir)/tests/gpiosim/ \
-		--library-dirs=$(top_builddir)/lib/.libs/:$(top_srcdir)/tests/gpiosim/.libs/
+all-local: python-tests
+	GPIOD_WITH_TESTS= \
+	CFLAGS="-I$(abs_top_srcdir)/include/ -I$(abs_top_srcdir)/tests/gpiosim/ \
+	-L$(abs_top_builddir)/lib/.libs/ -L$(abs_top_srcdir)/tests/gpiosim/.libs/" \
+	$(PYTHON) -m build .
 
 install-exec-local:
 	GPIOD_WITH_TESTS= \
